@@ -8,7 +8,7 @@ This plugin is for Grails 3 and this is a fork of https://github.com/davidtinker
 Add to build.gradle
 
     dependencies {
-         compile "org.grails.plugins:handlebars-renderer:0.1.1"
+         compile "org.grails.plugins:handlebars-renderer:0.1.2"
     }
 
 ### Config

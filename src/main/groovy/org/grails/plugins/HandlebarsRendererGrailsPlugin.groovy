@@ -4,7 +4,7 @@ import grails.plugins.Plugin
 import groovy.util.logging.Slf4j
 
 @Slf4j
-class HandlebarsRendererPlugin extends Plugin
+class HandlebarsRendererGrailsPlugin extends Plugin
 {
 	def grailsVersion   = "3.0.0 > *"
 	def title           = "Grails handlebars"
