@@ -1,0 +1,51 @@
+buildscript {
+	repositories {
+		mavenLocal()
+		maven { url "https://repo.grails.org/grails/core" }
+	}
+	dependencies {
+		classpath "org.grails:grails-gradle-plugin:$grailsVersion"
+	}
+}
+
+version "0.1.1"
+group "org.grails.plugins"
+
+apply plugin:"idea"
+apply plugin:"org.grails.grails-plugin"
+apply plugin:"org.grails.grails-plugin-publish"
+
+repositories {
+	mavenLocal()
+	maven { url "https://repo.grails.org/grails/core" }
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.grails:grails-bom:$grailsVersion"
+	}
+	applyMavenExclusions false
+}
+
+dependencies {
+	compile "org.grails:grails-core"
+	compile "org.grails:grails-plugin-converters"
+	compile 'com.github.jknack:handlebars:4.0.5'
+	provided 'javax.servlet:javax.servlet-api:3.1.0'
+}
+
+task wrapper(type: Wrapper) {
+	gradleVersion = gradleWrapperVersion
+}
+
+grailsPublish {
+	user = 'salex772'
+	key = 'c32a7a4faf99dace0d8716dd24aee832a905d1c8'
+	githubSlug = 'salex772/handlebars-renderer'
+	license {
+		name = 'Apache-2.0'
+	}
+	title = "Grails handlebars"
+	desc = "Grails handlebars templates renderer plugin"
+	developers = [salex772: "Alexander Shamshurin"]
+}

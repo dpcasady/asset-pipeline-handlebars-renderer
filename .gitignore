@@ -1,0 +1,6 @@
+*.log
+/build
+/.gradle
+/grails-app/assets
+!gradle-wrapper.jar
+/.idea
