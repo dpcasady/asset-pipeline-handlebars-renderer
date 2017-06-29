@@ -4,3 +4,4 @@
 /grails-app/assets
 !gradle-wrapper.jar
 /.idea
+*.iml
