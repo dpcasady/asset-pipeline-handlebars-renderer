@@ -13,7 +13,7 @@ Add to build.gradle
 
 ### Config
 
-	grails.handlebars.templatesRoot = 'templates'
+    grails.handlebars.templatesRoot = 'templates'
     grails.handlebars.templateExtension = '.hbs'
     grails.handlebars.templatesPathSeparator = '/'
 
@@ -22,27 +22,27 @@ Add to build.gradle
 
 In controller:
 
-	def data = [
-    	name  : 'alex',
+    def data = [
+        name  : 'alex',
     ]
-    
+
     //income.hbs must under path /src/main/webapps/templates/mailbox
     render handlebarsService.apply("mailbox/income", data)
 
-    
-In GSP template:    
-    
+
+In GSP template:
+
     <handlebars:render template="mailbox/income" model="${data}"/>
-    
-or 
-    
+
+or
+
     <handlebars:render>
         Hello {{name}} from the controller
     </handlebars:render>
-    
+
 Please read complete documentation at https://github.com/davidtinker/grails-handlebars
 
 
 
- 
- 
+
+

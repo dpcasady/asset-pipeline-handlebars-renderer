@@ -20,138 +20,138 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class HandlebarsService implements ServletContextAware {
 
-	def grailsApplication
+    def grailsApplication
 
-	String templatesPathSeparator
-	String templatesRoot
-	String templateExtension
+    String templatesPathSeparator
+    String templatesRoot
+    String templateExtension
 
-	Handlebars handlebars
+    Handlebars handlebars
 
-	private Map<String, Template> templateCache
-	private ServletContext        servletContext
+    private Map<String, Template> templateCache
+    private ServletContext        servletContext
 
-	void setServletContext(ServletContext servletContext) {
-		this.servletContext = servletContext
-	}
+    void setServletContext(ServletContext servletContext) {
+        this.servletContext = servletContext
+    }
 
-	@PostConstruct
-	private void init() {
-		def cfg = grailsApplication.config.grails.handlebars
-		templatesPathSeparator = cfg?.templatesPathSeparator ?: '/'
-		templatesRoot = cfg?.templatesRoot ?: ''
-		templateExtension = cfg?.templateExtension ?: '.handlebars'
-		def classHelperSource = cfg?.classHelperSource
-		def uriHelperSource = cfg?.uriHelperSource
-		def fileHelperSource = cfg?.fileHelperSource
+    @PostConstruct
+    private void init() {
+        def cfg = grailsApplication.config.grails.handlebars
+        templatesPathSeparator = cfg?.templatesPathSeparator ?: '/'
+        templatesRoot = cfg?.templatesRoot ?: ''
+        templateExtension = cfg?.templateExtension ?: '.handlebars'
+        def classHelperSource = cfg?.classHelperSource
+        def uriHelperSource = cfg?.uriHelperSource
+        def fileHelperSource = cfg?.fileHelperSource
 
 
-		def cacheTemplates = grailsApplication.config.handlebars.cache.templates
-		if (!(cacheTemplates instanceof Boolean)) cacheTemplates = !GrailsUtil.isDevelopmentEnv()
-		if (cacheTemplates) templateCache = new ConcurrentHashMap<String, Template>()
+        def cacheTemplates = grailsApplication.config.handlebars.cache.templates
+        if (!(cacheTemplates instanceof Boolean)) cacheTemplates = !GrailsUtil.isDevelopmentEnv()
+        if (cacheTemplates) templateCache = new ConcurrentHashMap<String, Template>()
 
-		def templateLoader = new ServletContextTemplateLoader(servletContext, templatesRoot, templateExtension)
-		handlebars = new Handlebars(templateLoader)
+        def templateLoader = new ServletContextTemplateLoader(servletContext, templatesRoot, templateExtension)
+        handlebars = new Handlebars(templateLoader)
 
-		if (classHelperSource) {
-			registerHelpers(Class.forName(classHelperSource))
-		}
-		if (uriHelperSource) {
-			registerHelpers(URI.create(uriHelperSource))
-		}
-		if (fileHelperSource) {
-			registerHelpers(new File(fileHelperSource))
-		}
-	}
+        if (classHelperSource) {
+            registerHelpers(Class.forName(classHelperSource))
+        }
+        if (uriHelperSource) {
+            registerHelpers(URI.create(uriHelperSource))
+        }
+        if (fileHelperSource) {
+            registerHelpers(new File(fileHelperSource))
+        }
+    }
 
-	/**
-	 * Apply a template provided as a resource to a model (Map, Java bean etc.) and return the generated String.
-	 */
-	String apply(String templateName, Object model) {
-		return compile(toResourceName(templateName)).apply(createContext(model))
-	}
+    /**
+     * Apply a template provided as a resource to a model (Map, Java bean etc.) and return the generated String.
+     */
+    String apply(String templateName, Object model) {
+        return compile(toResourceName(templateName)).apply(createContext(model))
+    }
 
-	/**
-	 * Apply a template provided as a String to a model (Map, Java bean etc.) and return the generated String.
-	 */
-	String applyInline(String inlineTemplate, Object model) {
-		return compileInline(inlineTemplate).apply(createContext(model))
-	}
+    /**
+     * Apply a template provided as a String to a model (Map, Java bean etc.) and return the generated String.
+     */
+    String applyInline(String inlineTemplate, Object model) {
+        return compileInline(inlineTemplate).apply(createContext(model))
+    }
 
-	/**
-	 * Converts a template name (e.g. 'profile/show') to a resource name under web-app (e.g.
-	 * 'templates/profile/show.handlebars') using settings from the handlebars-resources plugin.
-	 */
-	String toResourceName(String templateName) {
-		if (templatesPathSeparator != '/') templateName = templateName.replaceAll(templatesPathSeparator, '/')
-		if (templatesRoot) templateName = templatesRoot + "/" + templateName
-		return "/" + templateName + templateExtension
-	}
+    /**
+     * Converts a template name (e.g. 'profile/show') to a resource name under web-app (e.g.
+     * 'templates/profile/show.handlebars') using settings from the handlebars-resources plugin.
+     */
+    String toResourceName(String templateName) {
+        if (templatesPathSeparator != '/') templateName = templateName.replaceAll(templatesPathSeparator, '/')
+        if (templatesRoot) templateName = templatesRoot + "/" + templateName
+        return "/" + templateName + templateExtension
+    }
 
-	/** Compile a template provided as a resource. */
-	Template compile(String resourceName) {
-		return compileImpl(resourceName, true)
-	}
+    /** Compile a template provided as a resource. */
+    Template compile(String resourceName) {
+        return compileImpl(resourceName, true)
+    }
 
-	/** Compile a template provided as a String. */
-	Template compileInline(String inlineTemplate) {
-		return compileImpl(inlineTemplate, false)
-	}
+    /** Compile a template provided as a String. */
+    Template compileInline(String inlineTemplate) {
+        return compileImpl(inlineTemplate, false)
+    }
 
-	private Template compileImpl(String t, boolean isResource) {
-		if (templateCache) {
-			def template = templateCache.get(t)
-			if (template) return template
-		}
+    private Template compileImpl(String t, boolean isResource) {
+        if (templateCache) {
+            def template = templateCache.get(t)
+            if (template) return template
+        }
 
-		String text
-		if (isResource) {
-			def ins = ServletContextHolder.servletContext.getResourceAsStream(t)
-			if (!ins) throw new FileNotFoundException("Resource not found: " + t)
-			text = ins.getText("UTF8")
-		} else {
-			text = t
-		}
+        String text
+        if (isResource) {
+            def ins = ServletContextHolder.servletContext.getResourceAsStream(t)
+            if (!ins) throw new FileNotFoundException("Resource not found: " + t)
+            text = ins.getText("UTF8")
+        } else {
+            text = t
+        }
 
-		def template = handlebars.compileInline(text)
-		if (templateCache != null) templateCache.put(t, template)
-		return template
-	}
+        def template = handlebars.compileInline(text)
+        if (templateCache != null) templateCache.put(t, template)
+        return template
+    }
 
-	/** Create a context from a Map or Java bean etc. */
-	Context createContext(Object model) {
-		return Context.newBuilder(model)
-			.resolver(MapValueResolver.INSTANCE, JavaBeanValueResolver.INSTANCE, FieldValueResolver.INSTANCE)
-			.build()
-	}
+    /** Create a context from a Map or Java bean etc. */
+    Context createContext(Object model) {
+        return Context.newBuilder(model)
+            .resolver(MapValueResolver.INSTANCE, JavaBeanValueResolver.INSTANCE, FieldValueResolver.INSTANCE)
+            .build()
+    }
 
-	void registerHelpers(final URI location) throws Exception {
-		handlebars.registerHelpers(location)
-	}
+    void registerHelpers(final URI location) throws Exception {
+        handlebars.registerHelpers(location)
+    }
 
-	void registerHelpers(final Object helperSource) {
-		handlebars.registerHelper(helperSource)
-	}
+    void registerHelpers(final Object helperSource) {
+        handlebars.registerHelper(helperSource)
+    }
 
-	void registerHelpers(final Class<?> helperSource) {
-		handlebars.registerHelper(helperSource)
-	}
+    void registerHelpers(final Class<?> helperSource) {
+        handlebars.registerHelper(helperSource)
+    }
 
-	void registerHelpers(final File input) throws Exception {
-		handlebars.registerHelpers(input)
-	}
+    void registerHelpers(final File input) throws Exception {
+        handlebars.registerHelpers(input)
+    }
 
-	void  registerHelpers(final String filename, final Reader source) throws Exception {
-		handlebars.registerHelpers(filename, source)
-	}
+    void  registerHelpers(final String filename, final Reader source) throws Exception {
+        handlebars.registerHelpers(filename, source)
+    }
 
-	public void registerHelpers(final String filename, final InputStream source)
-		throws Exception {
-		handlebars.registerHelpers(filename, source)
-	}
+    public void registerHelpers(final String filename, final InputStream source)
+        throws Exception {
+        handlebars.registerHelpers(filename, source)
+    }
 
-	public void registerHelpers(final String filename, final String source) throws Exception {
-		handlebars.registerHelpers(filename, source)
+    public void registerHelpers(final String filename, final String source) throws Exception {
+        handlebars.registerHelpers(filename, source)
 
-	}
+    }
 }
