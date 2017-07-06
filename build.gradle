@@ -35,6 +35,6 @@ grailsPublish {
         name = 'Apache-2.0'
     }
     title = "Grails asset pipeline handlebars"
-    desc = "Grails asset pipeline handlebars templates renderer plugin"
+    desc = "Render Asset Pipeline managed Handlebars templates on the server-side"
     developers = [salex772: "Alexander Shamshurin", dpcasady: "Danny Casady"]
 }

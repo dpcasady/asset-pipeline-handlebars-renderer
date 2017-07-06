@@ -12,7 +12,7 @@ class AssetPipelineHandlebarsRendererGrailsPlugin extends Plugin
     def title           = "Grails asset pipeline handlebars"
     def author          = "Danny Casady"
     def authorEmail     = "dpcasady@gmail.com"
-    def description     = "Grails asset pipeline handlebars templates renderer plugin"
+    def description     = "Render Asset Pipeline managed Handlebars templates on the server-side"
     def documentation   = "https://github.com/dpcasady/asset-pipeline-handlebars-renderer"
     def scm             = [url: "https://github.com/dpcasady/asset-pipeline-handlebars-renderer"]
     def issueManagement = [system: "Github Issues", url: "https://github.com/dpcasady/asset-pipeline-handlebars-renderer"]
