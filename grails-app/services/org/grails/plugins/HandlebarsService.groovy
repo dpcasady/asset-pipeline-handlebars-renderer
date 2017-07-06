@@ -3,58 +3,46 @@ package org.grails.plugins
 import com.github.jknack.handlebars.Context
 import com.github.jknack.handlebars.Handlebars
 import com.github.jknack.handlebars.Template
+import com.github.jknack.handlebars.cache.HighConcurrencyTemplateCache
 import com.github.jknack.handlebars.context.FieldValueResolver
 import com.github.jknack.handlebars.context.JavaBeanValueResolver
 import com.github.jknack.handlebars.context.MapValueResolver
-import com.github.jknack.handlebars.io.ServletContextTemplateLoader
+import com.github.jknack.handlebars.io.TemplateLoader
+import grails.core.GrailsApplication
 import grails.util.GrailsUtil
-import grails.web.context.ServletContextHolder
-import org.springframework.web.context.ServletContextAware
 
 import javax.annotation.PostConstruct
-import javax.servlet.ServletContext
-import java.util.concurrent.ConcurrentHashMap
 
 /**
- * Compile Handlebars template resources located under web-app. Compiled templates are cached.
+ * Compile Handlebars templates resolved by a given TemplateLoader.
+ * Compiled templates are cached.
  */
-class HandlebarsService implements ServletContextAware {
+class HandlebarsService {
 
-    def grailsApplication
-
-    String templatesPathSeparator
-    String templatesRoot
-    String templateExtension
+    GrailsApplication grailsApplication
 
     Handlebars handlebars
-
-    private Map<String, Template> templateCache
-    private ServletContext        servletContext
-
-    void setServletContext(ServletContext servletContext) {
-        this.servletContext = servletContext
-    }
+    TemplateLoader templateLoader
 
     @PostConstruct
     private void init() {
-        def cfg = grailsApplication.config.grails.handlebars
-        templatesPathSeparator = cfg?.templatesPathSeparator ?: '/'
-        templatesRoot = cfg?.templatesRoot ?: ''
-        templateExtension = cfg?.templateExtension ?: '.handlebars'
-        def classHelperSource = cfg?.classHelperSource
-        def uriHelperSource = cfg?.uriHelperSource
-        def fileHelperSource = cfg?.fileHelperSource
+        Map<String, Object> cfg = grailsApplication.config.grails.assets.handlebars
+        String classHelperSource = cfg?.classHelperSource
+        String uriHelperSource = cfg?.uriHelperSource
+        String fileHelperSource = cfg?.fileHelperSource
 
-
-        def cacheTemplates = grailsApplication.config.handlebars.cache.templates
-        if (!(cacheTemplates instanceof Boolean)) cacheTemplates = !GrailsUtil.isDevelopmentEnv()
-        if (cacheTemplates) templateCache = new ConcurrentHashMap<String, Template>()
-
-        def templateLoader = new ServletContextTemplateLoader(servletContext, templatesRoot, templateExtension)
         handlebars = new Handlebars(templateLoader)
 
+        def cacheTemplates = grailsApplication.config.handlebars.cache.templates
+        if (!(cacheTemplates instanceof Boolean)) {
+            cacheTemplates = !GrailsUtil.developmentEnv
+        }
+        if (cacheTemplates) {
+            handlebars.with(new HighConcurrencyTemplateCache())
+        }
+
         if (classHelperSource) {
-            registerHelpers(Class.forName(classHelperSource))
+            registerHelpers(this.class.classLoader.loadClass(classHelperSource))
         }
         if (uriHelperSource) {
             registerHelpers(URI.create(uriHelperSource))
@@ -68,61 +56,23 @@ class HandlebarsService implements ServletContextAware {
      * Apply a template provided as a resource to a model (Map, Java bean etc.) and return the generated String.
      */
     String apply(String templateName, Object model) {
-        return compile(toResourceName(templateName)).apply(createContext(model))
+        Template template = handlebars.compile(templateName)
+        return template.apply(createContext(model))
     }
 
     /**
      * Apply a template provided as a String to a model (Map, Java bean etc.) and return the generated String.
      */
     String applyInline(String inlineTemplate, Object model) {
-        return compileInline(inlineTemplate).apply(createContext(model))
-    }
-
-    /**
-     * Converts a template name (e.g. 'profile/show') to a resource name under web-app (e.g.
-     * 'templates/profile/show.handlebars') using settings from the handlebars-resources plugin.
-     */
-    String toResourceName(String templateName) {
-        if (templatesPathSeparator != '/') templateName = templateName.replaceAll(templatesPathSeparator, '/')
-        if (templatesRoot) templateName = templatesRoot + "/" + templateName
-        return "/" + templateName + templateExtension
-    }
-
-    /** Compile a template provided as a resource. */
-    Template compile(String resourceName) {
-        return compileImpl(resourceName, true)
-    }
-
-    /** Compile a template provided as a String. */
-    Template compileInline(String inlineTemplate) {
-        return compileImpl(inlineTemplate, false)
-    }
-
-    private Template compileImpl(String t, boolean isResource) {
-        if (templateCache) {
-            def template = templateCache.get(t)
-            if (template) return template
-        }
-
-        String text
-        if (isResource) {
-            def ins = ServletContextHolder.servletContext.getResourceAsStream(t)
-            if (!ins) throw new FileNotFoundException("Resource not found: " + t)
-            text = ins.getText("UTF8")
-        } else {
-            text = t
-        }
-
-        def template = handlebars.compileInline(text)
-        if (templateCache != null) templateCache.put(t, template)
-        return template
+        Template template = handlebars.compileInline(inlineTemplate)
+        return template.apply(createContext(model))
     }
 
     /** Create a context from a Map or Java bean etc. */
     Context createContext(Object model) {
         return Context.newBuilder(model)
-            .resolver(MapValueResolver.INSTANCE, JavaBeanValueResolver.INSTANCE, FieldValueResolver.INSTANCE)
-            .build()
+                .resolver(MapValueResolver.INSTANCE, JavaBeanValueResolver.INSTANCE, FieldValueResolver.INSTANCE)
+                .build()
     }
 
     void registerHelpers(final URI location) throws Exception {
@@ -141,17 +91,15 @@ class HandlebarsService implements ServletContextAware {
         handlebars.registerHelpers(input)
     }
 
-    void  registerHelpers(final String filename, final Reader source) throws Exception {
+    void registerHelpers(final String filename, final Reader source) throws Exception {
         handlebars.registerHelpers(filename, source)
     }
 
-    public void registerHelpers(final String filename, final InputStream source)
-        throws Exception {
+    void registerHelpers(final String filename, final InputStream source) throws Exception {
         handlebars.registerHelpers(filename, source)
     }
 
-    public void registerHelpers(final String filename, final String source) throws Exception {
+    void registerHelpers(final String filename, final String source) throws Exception {
         handlebars.registerHelpers(filename, source)
-
     }
 }

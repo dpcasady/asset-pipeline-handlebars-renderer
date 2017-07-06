@@ -3,12 +3,11 @@ package org.grails.plugins
 /**
  * Tag to render a model using Handlebars templates.
  */
-class HandlebarsTagLib
-{
+class HandlebarsTagLib {
 
     static namespace = "handlebars"
 
-    def handlebarsService
+    HandlebarsService handlebarsService
 
     /**
      * <p>Renders a Handlebars template resource with a model:</p>
@@ -35,8 +34,10 @@ class HandlebarsTagLib
      */
     Closure render = { attrs, body ->
         def model = attrs.model ?: getPageScope().variables
-        if (attrs.template) out << handlebarsService.apply(attrs.template, model)
-        else out << handlebarsService.applyInline(String.valueOf(body()), model)
+        if (attrs.template)
+            out << handlebarsService.apply(attrs.template, model)
+        else
+            out << handlebarsService.applyInline(String.valueOf(body()), model)
     }
 
 }
